@@ -51,10 +51,10 @@ Sistem **“Rute Bidan”** merupakan sistem informasi berbasis **client-server*
 
 ---
 
-## 📸 Screenshots
+## 📱 Screenshots
 
-### 🏠 Homepage
-![Homepage](assets/homepage.png)
+Berikut adalah tampilan aplikasi **MomCare**:
 
-### 🗺️ Maps Page
-![Maps](assets/maps.png)
+| SplashScreen | HomePage | Maps Page |
+|--------------|----------|-----------|
+| <img src="assets/main.png" alt="SplashScreen" width="250"/> | <img src="assets/homepage.png" alt="HomePage" width="250"/> | <img src="assets/maps.png" alt="MapsPage" width="250"/> |

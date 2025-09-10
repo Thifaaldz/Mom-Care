@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:animations/animations.dart'; // ⬅️ tambahan
+import 'package:animations/animations.dart';
 import 'home_page.dart';
 import 'maps_page.dart';
 
@@ -107,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// MainScreen dengan custom bottom nav + transition
+/// MainScreen dengan modern bottom nav + transition
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -143,69 +143,74 @@ class _MainScreenState extends State<MainScreen> {
           child: _pages[_currentIndex],
         ),
       ),
-      bottomNavigationBar: Container(
-        color: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          child: BottomAppBar(
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Container(
+          decoration: BoxDecoration(
             color: Colors.white,
-            elevation: 8,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(4, (index) {
-                  final icons = [
-                    Icons.home,
-                    Icons.location_on,
-                    Icons.calendar_month,
-                    Icons.notifications
-                  ];
-                  final labels = ["Home", "Maps", "Kalender", "Notif"];
-                  final isSelected = _currentIndex == index;
-
-                  return GestureDetector(
-                    onTap: () => setState(() => _currentIndex = index),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedScale(
-                            duration: const Duration(milliseconds: 300),
-                            scale: isSelected ? 1.2 : 1.0,
-                            child: Icon(
-                              icons[index],
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                          if (isSelected)
-                            Text(
-                              labels[index],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(4, (index) {
+                final icons = [
+                  Icons.home,
+                  Icons.location_on,
+                  Icons.calendar_month,
+                  Icons.notifications
+                ];
+                final labels = ["Home", "Maps", "Kalender", "Notif"];
+                final isSelected = _currentIndex == index;
+
+                return GestureDetector(
+                  onTap: () => setState(() => _currentIndex = index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(context).primaryColor.withOpacity(0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icons[index],
+                          size: isSelected ? 28 : 24,
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          labels[index],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isSelected
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
         ),
