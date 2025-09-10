@@ -1,0 +1,6 @@
+streamlit
+pandas
+geojson
+ijson
+folium
+streamlit-folium

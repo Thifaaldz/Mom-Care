@@ -1,0 +1,116 @@
+import streamlit as st
+import pandas as pd
+import geojson
+import heapq
+from collections import defaultdict
+from math import radians, sin, cos, asin, sqrt
+import folium
+from streamlit_folium import st_folium
+
+st.set_page_config(page_title="Rute Bidan", page_icon="🗺️", layout="wide")
+
+# ===== Utility fungsi =====
+def haversine_km(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    dlat = radians(lat2 - lat1); dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    return 2 * R * asin(sqrt(a))
+
+def load_graph_from_geojson(path):
+    with open(path, "r", encoding="utf-8") as f:
+        gj = geojson.load(f)
+    features = gj["features"]
+
+    nodes, rev_nodes, adj = {}, {}, defaultdict(list)
+
+    def get_id(lat, lon):
+        key = (round(lat,6), round(lon,6))
+        if key not in nodes:
+            idx = len(nodes); nodes[key] = idx; rev_nodes[idx] = key
+        return nodes[key]
+
+    for feat in features:
+        geom = feat["geometry"]; coords = geom["coordinates"]
+        if geom["type"] == "LineString":
+            for i in range(len(coords)-1):
+                lon1, lat1 = coords[i][:2]
+                lon2, lat2 = coords[i+1][:2]
+                u, v = get_id(lat1, lon1), get_id(lat2, lon2)
+                w = haversine_km(lat1, lon1, lat2, lon2)
+                adj[u].append((v,w)); adj[v].append((u,w))
+        elif geom["type"] == "MultiLineString":
+            for line in coords:
+                for i in range(len(line)-1):
+                    lon1, lat1 = line[i][:2]
+                    lon2, lat2 = line[i+1][:2]
+                    u, v = get_id(lat1, lon1), get_id(lat2, lon2)
+                    w = haversine_km(lat1, lon1, lat2, lon2)
+                    adj[u].append((v,w)); adj[v].append((u,w))
+
+    return nodes, rev_nodes, adj
+
+def nearest_node(lat, lon, rev_nodes):
+    best, best_d = None, float("inf")
+    for idx, (nlat,nlon) in rev_nodes.items():
+        d = haversine_km(lat, lon, nlat, nlon)
+        if d < best_d: best, best_d = idx, d
+    return best
+
+def dijkstra(adj, source, target):
+    pq = [(0.0, source)]
+    dist, prev, visited = {source:0.0}, {}, set()
+    while pq:
+        d,u = heapq.heappop(pq)
+        if u in visited: continue
+        visited.add(u)
+        if u == target: break
+        for v,w in adj.get(u, []):
+            nd = d + w
+            if v not in dist or nd < dist[v]:
+                dist[v] = nd; prev[v] = u
+                heapq.heappush(pq,(nd,v))
+    if target not in dist: return float("inf"), []
+    # reconstruct path
+    path=[target]
+    while path[-1] != source:
+        path.append(prev[path[-1]])
+    return dist[target], list(reversed(path))
+
+# ===== Load data lokal =====
+nodes, rev_nodes, adj = load_graph_from_geojson("Jaringan_jalanan_indonesia.geojson")
+bidan_df = pd.read_csv("bidan_points.csv")  # data bidan (id,name,lat,lon,rating)
+
+# ===== Input lokasi user =====
+st.sidebar.header("Lokasi Anda")
+user_lat = st.sidebar.number_input("Latitude", value=-6.2, format="%.6f")
+user_lon = st.sidebar.number_input("Longitude", value=106.8, format="%.6f")
+
+s_id = nearest_node(user_lat, user_lon, rev_nodes)
+
+# ===== Pilih Bidan Tujuan =====
+st.sidebar.header("Pilih Tujuan")
+bidan_names = bidan_df["name"].tolist()
+selected_bidan = st.sidebar.selectbox("Bidan Tujuan", bidan_names)
+
+dest_row = bidan_df[bidan_df["name"] == selected_bidan].iloc[0]
+t_id = nearest_node(dest_row.lat, dest_row.lon, rev_nodes)
+
+# Hitung rute
+dist_km, path_ids = dijkstra(adj, s_id, t_id)
+
+# ===== Peta Folium =====
+m = folium.Map(location=[user_lat, user_lon], zoom_start=14)
+
+# Marker asal
+folium.Marker([user_lat, user_lon], popup="Anda", icon=folium.Icon(color="blue")).add_to(m)
+# Marker tujuan
+folium.Marker([dest_row.lat, dest_row.lon], popup=dest_row.name, icon=folium.Icon(color="red")).add_to(m)
+
+# Gambar polyline sesuai jaringan
+if path_ids:
+    route_coords = [(rev_nodes[nid][0], rev_nodes[nid][1]) for nid in path_ids]
+    folium.PolyLine([(lat, lon) for lat, lon in route_coords], color="green", weight=5).add_to(m)
+
+st_folium(m, width=800, height=600)
+
+st.success(f"🚗 Rute ke {dest_row.name} — {dist_km:.2f} km via jaringan jalan.")
